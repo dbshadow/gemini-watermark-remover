@@ -56,11 +56,13 @@ async function init() {
  */
 function setupLanguageSwitch() {
     const btn = document.getElementById('langSwitch');
-    btn.textContent = i18n.locale === 'zh-CN' ? 'EN' : '中文';
+    if (!btn) return;
+    
+    btn.textContent = i18n.locale === 'zh-TW' ? 'EN' : 'TW';
     btn.addEventListener('click', async () => {
-        const newLocale = i18n.locale === 'zh-CN' ? 'en-US' : 'zh-CN';
+        const newLocale = i18n.locale === 'zh-TW' ? 'en-US' : 'zh-TW';
         await i18n.switchLocale(newLocale);
-        btn.textContent = newLocale === 'zh-CN' ? 'EN' : '中文';
+        btn.textContent = newLocale === 'zh-TW' ? 'EN' : 'TW';
         updateDynamicTexts();
     });
 }
@@ -87,16 +89,20 @@ function setupEventListeners() {
         handleFiles(Array.from(e.dataTransfer.files));
     });
 
-    downloadAllBtn.addEventListener('click', downloadAll);
+    if (downloadAllBtn) downloadAllBtn.addEventListener('click', downloadAll);
     resetBtn.addEventListener('click', reset);
 }
 
 function reset() {
-    singlePreview.style.display = 'none';
-    multiPreview.style.display = 'none';
+    singlePreview.classList.add('is-hidden');
+    multiPreview.classList.add('is-hidden');
+    processedSection.classList.add('is-hidden');
+    if (downloadBtn) downloadBtn.style.display = 'none';
+    
     imageQueue = [];
     processedCount = 0;
     fileInput.value = '';
+    setStatusMessage('');
 }
 
 function handleFileSelect(e) {
@@ -124,12 +130,12 @@ function handleFiles(files) {
     processedCount = 0;
 
     if (validFiles.length === 1) {
-        singlePreview.style.display = 'block';
-        multiPreview.style.display = 'none';
+        singlePreview.classList.remove('is-hidden');
+        multiPreview.classList.add('is-hidden');
         processSingle(imageQueue[0]);
     } else {
-        singlePreview.style.display = 'none';
-        multiPreview.style.display = 'block';
+        singlePreview.classList.add('is-hidden');
+        multiPreview.classList.remove('is-hidden');
         imageList.innerHTML = '';
         updateProgress();
         multiPreview.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -161,9 +167,12 @@ async function processSingle(item) {
         item.processedBlob = blob;
 
         processedImage.src = URL.createObjectURL(blob);
-        processedSection.style.display = 'block';
-        downloadBtn.style.display = 'flex';
-        downloadBtn.onclick = () => downloadImage(item);
+        processedSection.classList.remove('is-hidden');
+        
+        if (downloadBtn) {
+            downloadBtn.style.display = 'flex';
+            downloadBtn.onclick = () => downloadImage(item);
+        }
 
         processedInfo.innerHTML = `
             <p>${i18n.t('info.size')}: ${img.width}×${img.height}</p>
@@ -206,8 +215,11 @@ async function processQueue() {
     for (const item of imageQueue) {
         const img = await loadImage(item.file);
         item.originalImg = img;
-        document.getElementById(`result-${item.id}`).src = img.src;
-        zoom.attach(`#result-${item.id}`);
+        const resultImg = document.getElementById(`result-${item.id}`);
+        if (resultImg) {
+            resultImg.src = img.src;
+            zoom.attach(resultImg);
+        }
     }
 
     for (const item of imageQueue) {
@@ -221,7 +233,8 @@ async function processQueue() {
             const blob = await new Promise(resolve => result.toBlob(resolve, 'image/png'));
             item.processedBlob = blob;
 
-            document.getElementById(`result-${item.id}`).src = URL.createObjectURL(blob);
+            const resultImg = document.getElementById(`result-${item.id}`);
+            if (resultImg) resultImg.src = URL.createObjectURL(blob);
 
             item.status = 'completed';
             const watermarkInfo = engine.getWatermarkInfo(item.originalImg.width, item.originalImg.height);
@@ -234,8 +247,10 @@ async function processQueue() {
             <p class="inline-block mt-1 text-xs md:text-sm ${is_google && is_original ? 'hidden' : 'text-warn'}">${originalStatus}</p>`, true);
 
             const downloadBtn = document.getElementById(`download-${item.id}`);
-            downloadBtn.classList.remove('hidden');
-            downloadBtn.onclick = () => downloadImage(item);
+            if (downloadBtn) {
+                downloadBtn.classList.remove('hidden');
+                downloadBtn.onclick = () => downloadImage(item);
+            }
 
             processedCount++;
             updateProgress();
@@ -246,8 +261,8 @@ async function processQueue() {
         }
     }
 
-    if (processedCount > 0) {
-        downloadAllBtn.style.display = 'flex';
+    if (processedCount > 0 && downloadAllBtn) {
+        downloadAllBtn.classList.remove('is-hidden');
     }
 }
 
@@ -257,11 +272,13 @@ function updateStatus(id, text, isHtml = false) {
 }
 
 function updateProgress() {
-    progressText.textContent = `${i18n.t('progress.text')}: ${processedCount}/${imageQueue.length}`;
+    if (progressText) {
+        progressText.textContent = `${i18n.t('progress.text')}: ${processedCount}/${imageQueue.length}`;
+    }
 }
 
 function updateDynamicTexts() {
-    if (progressText.textContent) {
+    if (progressText && progressText.textContent) {
         updateProgress();
     }
 }

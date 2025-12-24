@@ -36,19 +36,22 @@ export function getOriginalStatus({ is_google, is_original }) {
 const statusMessage = document.getElementById('statusMessage');
 export function setStatusMessage(message = '', type = '') {
     statusMessage.textContent = message;
-    statusMessage.style.display = message ? 'block' : 'none';
-    const colorMap = { warn: 'text-warn', success: 'text-success' };
+    statusMessage.classList.remove('is-hidden');
+    if (!message) {
+        statusMessage.classList.add('is-hidden');
+    }
+    const colorMap = { warn: 'text-red-500', success: 'text-green-500' };
     statusMessage.classList.remove(...Object.values(colorMap));
     if (colorMap[type]) statusMessage.classList.add(colorMap[type]);
 }
 
 const loadingOverlay = document.getElementById('loadingOverlay');
 export function showLoading(text = null) {
-    loadingOverlay.style.display = 'flex';
+    loadingOverlay.classList.remove('is-hidden');
     const textEl = loadingOverlay.querySelector('p');
     if (textEl && text) textEl.textContent = text;
 }
 
 export function hideLoading() {
-    loadingOverlay.style.display = 'none';
+    loadingOverlay.classList.add('is-hidden');
 }

@@ -1,5 +1,5 @@
 const i18n = {
-  locale: localStorage.getItem('locale') || (navigator.language.startsWith('zh') ? 'zh-CN' : 'en-US'),
+  locale: localStorage.getItem('locale') || 'zh-TW',
   translations: {},
 
   async init() {
